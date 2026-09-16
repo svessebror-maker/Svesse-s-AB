@@ -194,7 +194,7 @@ die.add(body);
 
 /* ---- face labels: one local Ollama-servable model per face, each a
    clickable button that opens the local Ollama instance ---- */
-function makeLabelTexture(modelName, hover) {
+function makeLabelTexture(modelName, hover, subtitle) {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -207,8 +207,11 @@ function makeLabelTexture(modelName, hover) {
   const title = modelName.toUpperCase();
   const kickerFont = 24, titleFont = 84, captionFont = 25;
   const kickerGap = 14, ruleGap = 22, ruleH = 3, captionGap = 22;
+  const subtitleFont = 22, subtitleGap = 10;
 
-  const contentH = kickerFont + kickerGap + titleFont + ruleGap + ruleH + captionGap + captionFont;
+  const contentH = kickerFont + kickerGap + titleFont
+    + (subtitle ? subtitleFont + subtitleGap : 0)
+    + ruleGap + ruleH + captionGap + captionFont;
   const padX = 56, padY = 40;
   const plateW = Math.min(size - padX, 460);
   const plateH = contentH + padY * 2;
@@ -259,7 +262,20 @@ function makeLabelTexture(modelName, hover) {
   ctx.shadowBlur = 0;
   ctx.fillStyle = '#f4fbff';
   ctx.fillText(title, size / 2, cursorY);
-  cursorY += titleFont + ruleGap;
+  cursorY += titleFont;
+
+  /* optional subtitle — used where the model name alone doesn't say enough
+     (e.g. a variant's base model + size) but the full name is too long to
+     set as the title itself */
+  if (subtitle) {
+    cursorY += subtitleGap;
+    ctx.font = '600 ' + subtitleFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+    try { ctx.letterSpacing = '1px'; } catch (e) {}
+    ctx.fillStyle = 'rgba(190, 226, 255, 0.7)';
+    ctx.fillText(subtitle.toUpperCase(), size / 2, cursorY);
+    cursorY += subtitleFont;
+  }
+  cursorY += ruleGap;
 
   /* thin accent rule */
   const ruleWidth = plateW * 0.3;
@@ -301,17 +317,17 @@ const FACES = [
   { normal: [1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Mistral' },
   { normal: [-1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Phi' },
   { normal: [0, 1, 0], up: new THREE.Vector3(0, 0, -1), model: 'Gemma' },
-  { normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Qwen' },
+  { normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Heretic', subtitle: 'Qwen 27B · Q8_0' },
 ];
 
 const LABEL_SIZE = S * 0.62;      // clears the 12mm edge fillet with margin to spare
 const LABEL_OFFSET = H + 0.0008;  // tiny standoff so the plane never z-fights the resin
 const labelMeshes = [];
 
-for (const { normal, up, model } of FACES) {
+for (const { normal, up, model, subtitle } of FACES) {
   const mat = new THREE.MeshBasicMaterial({
     name: 'label-' + model.toLowerCase(),
-    map: makeLabelTexture(model, false),
+    map: makeLabelTexture(model, false, subtitle),
     transparent: true,
     depthWrite: false,
   });
@@ -320,7 +336,7 @@ for (const { normal, up, model } of FACES) {
   plane.position.set(...normal).multiplyScalar(LABEL_OFFSET);
   plane.quaternion.copy(faceQuaternion(normal, up));
   plane.userData.normalTex = mat.map;
-  plane.userData.hoverTex = makeLabelTexture(model, true);
+  plane.userData.hoverTex = makeLabelTexture(model, true, subtitle);
   die.add(plane);
   labelMeshes.push(plane);
 }
