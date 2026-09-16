@@ -1,25 +1,25 @@
-# CODING AGENTS: READ THIS FIRST
+# AI Model Die
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+A basketball-scale d6 (240mm, 12mm filleted edges) rendered live in the browser with three.js and auto-rotating in place — drag to orbit, scroll to zoom, right-drag to pan. The cube sits centered in a full-bleed, dark, minimalist "deep space" scene: a twinkling canvas starfield, a slow-drifting nebula glow, and a thin HUD-style overlay (brand mark, spec readout, orbit hint, export toolbar) — no chrome, no page scroll.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## Run it
 
-## What you should do — IMPORTANT
+Static site, no build step. Serve the directory over HTTP (the ES module imports and import map need a real origin, not `file://`):
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+```
+npx serve .
+# or: python3 -m http.server
+```
 
-**Read `project/AI Model Die.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+Then open `index.html`.
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+## Structure
 
-## About the design files
+- `index.html` — the page: the space background (gradient + canvas starfield + drifting nebula glow), the HUD overlay (brand, spec readout), the `<three-d-stage>` viewport, and the script that builds the die geometry.
+- `three-d-stage.js` — a reusable `<three-d-stage>` custom element: scene/lighting/camera setup, orbit + autorotate controls, and a toolbar (restyled as dark glass to match the theme) that exports the current object as OBJ+MTL or GLB.
+- `styles/modernist.css` — the Modernist design system (tokens + component classes) used in an earlier iteration of this page; kept for reference but no longer linked from `index.html`. See `styles/modernist-readme.md` for usage guidance.
+- `chats/` — transcripts from the design sessions that produced this bundle, kept for context on how the design decisions were made.
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+## Current state
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
-
-## Bundle contents
-
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Modeling a 3D object` project files (HTML prototypes, assets, components)
+The die body ships blank (no face marks or pips) — a clean starting point for downstream marking. Exports as a single `die-body` node with the `ink-resin` material, ready to open in Blender.

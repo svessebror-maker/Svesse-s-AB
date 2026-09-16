@@ -85,10 +85,12 @@
     }
     .toolbar button {
       appearance: none;
-      border: 1px solid rgba(20, 20, 19, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.14);
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.92);
-      color: #1a1915;
+      background: rgba(10, 14, 22, 0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(238, 241, 248, 0.92);
       font-family: inherit;
       font-size: 12.5px;
       font-weight: 500;
@@ -96,16 +98,16 @@
       padding: 9px 12px;
       cursor: default;
     }
-    .toolbar button:hover { background: #fff; }
+    .toolbar button:hover { background: rgba(20, 28, 42, 0.75); border-color: rgba(125, 216, 255, 0.4); }
     .toolbar button:active { transform: translateY(1px); }
-    .toolbar button[disabled] { opacity: 0.5; pointer-events: none; }
+    .toolbar button[disabled] { opacity: 0.4; pointer-events: none; }
     .note {
       position: absolute;
       left: 16px;
       bottom: 16px;
       max-width: 60%;
       font: 400 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: rgba(26, 25, 21, 0.55);
+      color: rgba(238, 241, 248, 0.42);
       user-select: none;
     }
     .err {
@@ -116,7 +118,7 @@
       justify-content: center;
       padding: 24px;
       font: 500 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #8a2f20;
+      color: #ff8a75;
       text-align: center;
       white-space: pre-line;
     }
