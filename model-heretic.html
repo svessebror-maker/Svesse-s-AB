@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Qwen3.6-27B Heretic — Run Locally</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --void-1: #05060a;
+    --void-2: #0a0e18;
+    --text: #eef1f8;
+    --text-dim: rgba(238, 241, 248, 0.6);
+    --text-faint: rgba(238, 241, 248, 0.32);
+    --accent: #7dd8ff;
+    --accent-dim: rgba(125, 216, 255, 0.35);
+    --warn: #ffb454;
+    --warn-dim: rgba(255, 180, 84, 0.16);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: var(--void-1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    color: var(--text);
+  }
+
+  /* same deep-space backdrop language as the die site — z-index stays >= 0,
+     never negative (a fixed + negative-z layer paints behind the page's own
+     promoted background in every browser and would silently never show) */
+  .space {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 20%, #1a2a45 0%, transparent 62%),
+      radial-gradient(ellipse 120% 90% at 50% 100%, var(--void-2) 0%, var(--void-1) 55%);
+  }
+  #stars { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; }
+
+  main {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .card {
+    width: min(640px, 100%);
+    background: rgba(11, 20, 33, 0.55);
+    border: 1px solid rgba(125, 216, 255, 0.28);
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 30px 80px -20px rgba(0,0,0,0.6), 0 0 60px -12px rgba(125,216,255,0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 36px 36px 32px;
+  }
+
+  .kicker {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .kicker .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px 1px var(--accent-dim);
+  }
+
+  h1 {
+    margin: 0 0 6px; font-size: 25px; line-height: 1.25; font-weight: 700;
+    word-break: break-word;
+  }
+  h1 .quant { color: var(--accent); font-weight: 700; }
+
+  .source {
+    margin: 0 0 28px; font-size: 13px; color: var(--text-faint);
+    word-break: break-all;
+  }
+  .source a { color: var(--text-dim); text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .source a:hover { color: var(--accent); }
+
+  h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin: 28px 0 10px;
+  }
+
+  .cmd-row { display: flex; gap: 8px; align-items: stretch; }
+  .cmd {
+    flex: 1; min-width: 0;
+    background: rgba(5, 8, 14, 0.7);
+    border: 1px solid rgba(125, 216, 255, 0.25);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.5; color: #d7ecff;
+    overflow-x: auto; white-space: pre;
+  }
+  .copy-btn {
+    flex: none;
+    appearance: none; cursor: pointer;
+    background: rgba(125, 216, 255, 0.12);
+    border: 1px solid rgba(125, 216, 255, 0.4);
+    border-radius: 10px;
+    color: var(--accent);
+    font: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 0 16px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .copy-btn:hover { background: rgba(125, 216, 255, 0.2); border-color: rgba(125, 216, 255, 0.7); }
+  .copy-btn:active { transform: translateY(1px); }
+  .copy-btn.done { color: #b8ffcf; border-color: rgba(184, 255, 207, 0.5); background: rgba(184, 255, 207, 0.1); }
+
+  .specs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px;
+    margin: 0;
+  }
+  .specs div { font-size: 13px; }
+  .specs dt {
+    font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 2px;
+  }
+  .specs dd { margin: 0; color: var(--text); font-weight: 500; }
+
+  .callout {
+    margin-top: 28px;
+    background: var(--warn-dim);
+    border: 1px solid rgba(255, 180, 84, 0.4);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 13px; line-height: 1.55; color: #ffe3bd;
+  }
+  .callout strong { color: var(--warn); }
+
+  footer {
+    margin-top: 26px; padding-top: 20px;
+    border-top: 1px solid rgba(238, 241, 248, 0.08);
+    font-size: 11.5px; color: var(--text-faint); line-height: 1.6;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 26px 22px 24px; }
+    .specs { grid-template-columns: 1fr; }
+    .cmd-row { flex-direction: column; }
+    .copy-btn { padding: 10px 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="space"></div>
+<canvas id="stars"></canvas>
+
+<main>
+  <div class="card">
+    <div class="kicker"><span class="dot"></span>Local Model &middot; Ollama / Hugging Face</div>
+    <h1>Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP <span class="quant">Q8_0</span></h1>
+    <p class="source">
+      <a href="https://huggingface.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF" target="_blank" rel="noopener">hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF</a>
+    </p>
+
+    <h2>Run it</h2>
+    <div class="cmd-row">
+      <div class="cmd" id="cmd">ollama run hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF:Q8_0</div>
+      <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+    </div>
+
+    <h2>Before you pull it</h2>
+    <dl class="specs">
+      <div><dt>Quantization</dt><dd>Q8_0 (near-lossless)</dd></div>
+      <div><dt>Parameters</dt><dd>27B</dd></div>
+      <div><dt>Approx. download</dt><dd>~29 GB</dd></div>
+      <div><dt>Recommended RAM</dt><dd>32 GB+ (or matching VRAM)</dd></div>
+      <div><dt>Prerequisite</dt><dd>Ollama installed &amp; running</dd></div>
+      <div><dt>First run</dt><dd>Downloads GGUF from Hugging Face</dd></div>
+    </dl>
+
+    <div class="callout">
+      <strong>Uncensored / "Heretic" branding</strong> means safety training has been deliberately stripped or bypassed — expect no refusal behavior. Separately, the name bundles several unrelated proprietary and open lineages (DeepSeek V4 Pro, GLM 5.2, GPT-5.5) into one 27B model, which isn't technically coherent — treat that part of the name as community marketing, not a verified merge lineage, regardless of how the underlying weights actually perform.
+    </div>
+
+    <footer>
+      Lighter on hardware? Check the same repo for a smaller quant (e.g. <code style="font-family:var(--mono)">Q4_K_M</code>) if Q8_0 is too large for your machine.
+    </footer>
+  </div>
+</main>
+
+<script>
+  const btn = document.getElementById('copyBtn');
+  const cmdEl = document.getElementById('cmd');
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(cmdEl.textContent.trim());
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+    } catch (e) {
+      btn.textContent = 'Select & copy manually';
+    }
+  });
+</script>
+
+<script>
+  /* minimal dependency-free starfield, shared visual language with index.html */
+  (() => {
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let stars = [];
+    const STAR_COLORS = [
+      [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255],
+      [190, 220, 255], [189, 238, 255], [255, 214, 170],
+    ];
+
+    function resize() {
+      canvas.width = Math.round(innerWidth * dpr);
+      canvas.height = Math.round(innerHeight * dpr);
+      const count = Math.round((innerWidth * innerHeight) / 1400);
+      stars = Array.from({ length: count }, (_, i) => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: (i % 9 === 0 ? Math.random() * 1.6 + 1.8 : Math.random() * 1.1 + 0.7) * dpr,
+        base: Math.random() * 0.4 + 0.5,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.5 + 0.15,
+        color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      }));
+    }
+
+    function frame(t) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of stars) {
+        const a = Math.min(1, s.base * (0.65 + 0.35 * Math.sin(t * 0.0012 * s.speed + s.phase)));
+        const [r, g, b] = s.color;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>
