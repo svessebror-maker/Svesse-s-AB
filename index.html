@@ -123,11 +123,6 @@
     font-size: 13px; font-weight: 600; letter-spacing: 0.22em;
     text-transform: uppercase; color: var(--text);
   }
-  .brand .sub {
-    display: block; margin-top: 3px; margin-left: 17px;
-    font-size: 10.5px; letter-spacing: 0.08em; color: var(--text-faint);
-  }
-
   /* secondary pages hang off the die, not the other way around — a quiet
      two-link row under the brand mark, not a full nav bar */
   .brand .subnav {
@@ -170,7 +165,6 @@
     <span class="dot"></span>
     <span class="label">Svesse's Local AI</span>
   </div>
-  <span class="sub">Interactive 3D &middot; Rev 03</span>
   <nav class="subnav">
     <a href="inventory.html">Inventory</a>
     <a href="model-heretic.html">Heretic Model</a>
@@ -268,15 +262,14 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
 
-  const kicker = 'OLLAMA';
   const title = modelName.toUpperCase();
-  const kickerFont = 24, titleFont = 84, captionFont = 25;
-  const kickerGap = 14, ruleGap = 22, ruleH = 4, captionGap = 22;
+  const titleFont = 84, captionFont = 25;
+  const ruleGap = 22, ruleH = 4, captionGap = 22;
   const subtitleFont = 22, subtitleGap = 10;
   const tagsFont = 15, tagChipH = tagsFont + 14, tagsGapAbove = 16, tagsGapBelow = 18;
   const infoFont = 15, infoGapAbove = 10, infoGapBelow = 4;
 
-  const contentH = kickerFont + kickerGap + titleFont
+  const contentH = titleFont
     + (subtitle ? subtitleFont + subtitleGap : 0)
     + (tags && tags.length ? tagsGapAbove + tagChipH + tagsGapBelow : 0)
     + (info ? infoGapAbove + infoFont + infoGapBelow : 0)
@@ -309,7 +302,7 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  /* a soft radial spotlight behind the kicker/title, plus the diagonal
+  /* a soft radial spotlight behind the title, plus the diagonal
      sheen — together they read as "lit from inside," not just outlined */
   ctx.save();
   roundRect(plateX, plateY, plateW, plateH, radius);
@@ -335,23 +328,6 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
   ctx.stroke();
 
   let cursorY = plateY + padY;
-
-  /* small colored mark + product kicker — the mark is what carries each
-     face's identity color at a glance, even before reading the name */
-  ctx.font = '700 ' + kickerFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
-  try { ctx.letterSpacing = '4px'; } catch (e) {}
-  const kickerW = ctx.measureText(kicker).width;
-  const markR = 6;
-  ctx.beginPath();
-  ctx.fillStyle = rgba(accent, hover ? 1 : 0.9);
-  ctx.shadowColor = rgba(accent, 1);
-  ctx.shadowBlur = hover ? 18 : 13;
-  ctx.arc(size / 2 - kickerW / 2 - 16, cursorY + kickerFont * 0.42, markR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = rgba(accent, 0.75);
-  ctx.fillText(kicker, size / 2, cursorY);
-  cursorY += kickerFont + kickerGap;
 
   /* model name: layered glow, then a crisp core pass on top */
   ctx.font = '800 ' + titleFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';

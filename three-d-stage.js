@@ -259,6 +259,13 @@
       );
       ground.rotation.x = -Math.PI / 2;
       ground.receiveShadow = true;
+      // Hidden by default: at close camera distances (small objects like
+      // the die) this huge shadow-catcher plane's tinted region can fill
+      // most of the frame as a big dark rhombus, which reads as a stray
+      // dark square rather than a subtle contact shadow. Kept in the scene
+      // graph (not removed) so setObject()'s _ground.position.y write below
+      // still has something valid to touch; just not rendered.
+      ground.visible = false;
       this._ground = ground;
       scene.add(ground);
 
