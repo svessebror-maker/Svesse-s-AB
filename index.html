@@ -66,8 +66,25 @@
     50%  { transform: translate3d(1%, 1%, 0) scale(1.04); filter: blur(50px) hue-rotate(16deg); }
     100% { transform: translate3d(1.5%, 1.5%, 0) scale(1.05); filter: blur(50px) hue-rotate(-10deg); }
   }
+  /* a second, slower nebula layer on its own period and a different pair of
+     hotspots — two independent drifts read as atmosphere; one drift reads
+     as a single thing wobbling */
+  .nebula-b {
+    position: fixed; inset: -14%; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 66% 22%, rgba(255, 143, 208, 0.16), transparent 30%),
+      radial-gradient(circle at 20% 78%, rgba(124, 255, 178, 0.12), transparent 28%);
+    filter: blur(64px);
+    animation: drift-b 52s ease-in-out infinite alternate;
+    mix-blend-mode: screen;
+  }
+  @keyframes drift-b {
+    0%   { transform: translate3d(1.5%, 1%, 0) scale(1.02) rotate(0deg); }
+    50%  { transform: translate3d(-1%, -1.5%, 0) scale(1.06) rotate(2deg); }
+    100% { transform: translate3d(-1.8%, 0.5%, 0) scale(1) rotate(-1.5deg); }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .nebula { animation: none; }
+    .nebula, .nebula-b, .planet::after { animation: none; }
   }
   #stars { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; }
 
@@ -82,6 +99,12 @@
   .planet::after {
     content: ''; position: absolute; inset: 0; border-radius: 50%;
     background: radial-gradient(circle at 66% 70%, rgba(0, 0, 0, 0.4), transparent 55%);
+    background-size: 180% 180%;
+    animation: planet-spin 70s ease-in-out infinite alternate;
+  }
+  @keyframes planet-spin {
+    0%   { background-position: 30% 20%; }
+    100% { background-position: 70% 55%; }
   }
 
   /* soft ambient bounce-light behind the die, tying its silhouette to the
@@ -150,6 +173,7 @@
 <body>
 <div class="space"></div>
 <div class="nebula"></div>
+<div class="nebula-b"></div>
 <canvas id="stars"></canvas>
 <div class="planet"></div>
 <div class="die-glow"></div>
@@ -172,7 +196,7 @@
   <div><b>Ink resin</b></div>
 </div>
 
-<three-d-stage name="ai-model-die" background="transparent" autorotate></three-d-stage>
+<three-d-stage name="ai-model-die" background="transparent"></three-d-stage>
 
 <script src="three-d-stage.js"></script>
 <script type="module">
@@ -218,8 +242,21 @@ body.castShadow = body.receiveShadow = true;
 die.add(body);
 
 /* ---- face labels: one local Ollama-servable model per face, each a
-   clickable button that opens the local Ollama instance ---- */
-function makeLabelTexture(modelName, hover, subtitle) {
+   clickable button that opens the local Ollama instance. Each face carries
+   its own accent hue (drawn from colors already used elsewhere on the site
+   — nebula blue/violet, the "ok"/"warn" tones from the inventory page) so
+   the six buttons read as six distinct things at a glance, not one button
+   repeated six times. ---- */
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function rgba(hex, a) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function makeLabelTexture(modelName, hover, subtitle, accent) {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -256,22 +293,45 @@ function makeLabelTexture(modelName, hover, subtitle) {
 
   /* button plate: filled + glowing, brighter border and fill on hover */
   roundRect(plateX, plateY, plateW, plateH, radius);
-  ctx.fillStyle = hover ? 'rgba(28, 52, 76, 0.78)' : 'rgba(11, 20, 33, 0.5)';
-  ctx.shadowColor = hover ? 'rgba(160, 226, 255, 0.95)' : 'rgba(125, 216, 255, 0.45)';
-  ctx.shadowBlur = hover ? 34 : 16;
+  ctx.fillStyle = hover ? 'rgba(20, 28, 40, 0.82)' : 'rgba(11, 20, 33, 0.5)';
+  ctx.shadowColor = hover ? rgba(accent, 0.95) : rgba(accent, 0.4);
+  ctx.shadowBlur = hover ? 36 : 16;
   ctx.fill();
   ctx.shadowBlur = 0;
+
+  /* a soft diagonal sheen inside the plate — the thing that reads as
+     "glass button" instead of "flat rectangle" */
+  ctx.save();
+  roundRect(plateX, plateY, plateW, plateH, radius);
+  ctx.clip();
+  const sheen = ctx.createLinearGradient(plateX, plateY, plateX + plateW * 0.4, plateY + plateH);
+  sheen.addColorStop(0, rgba(accent, hover ? 0.22 : 0.12));
+  sheen.addColorStop(0.5, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(plateX, plateY, plateW, plateH);
+  ctx.restore();
+
   roundRect(plateX, plateY, plateW, plateH, radius);
   ctx.lineWidth = hover ? 3.5 : 2;
-  ctx.strokeStyle = hover ? 'rgba(200, 236, 255, 0.95)' : 'rgba(125, 216, 255, 0.55)';
+  ctx.strokeStyle = hover ? rgba(accent, 0.95) : rgba(accent, 0.6);
   ctx.stroke();
 
   let cursorY = plateY + padY;
 
-  /* small product kicker */
+  /* small colored mark + product kicker — the mark is what carries each
+     face's identity color at a glance, even before reading the name */
   ctx.font = '700 ' + kickerFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
   try { ctx.letterSpacing = '4px'; } catch (e) {}
-  ctx.fillStyle = 'rgba(190, 226, 255, 0.65)';
+  const kickerW = ctx.measureText(kicker).width;
+  const markR = 6;
+  ctx.beginPath();
+  ctx.fillStyle = rgba(accent, hover ? 1 : 0.85);
+  ctx.shadowColor = rgba(accent, 0.9);
+  ctx.shadowBlur = 10;
+  ctx.arc(size / 2 - kickerW / 2 - 16, cursorY + kickerFont * 0.42, markR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = rgba(accent, 0.75);
   ctx.fillText(kicker, size / 2, cursorY);
   cursorY += kickerFont + kickerGap;
 
@@ -279,13 +339,13 @@ function makeLabelTexture(modelName, hover, subtitle) {
   ctx.font = '800 ' + titleFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
   try { ctx.letterSpacing = '3px'; } catch (e) {}
   [32, 17].forEach((blur) => {
-    ctx.shadowColor = 'rgba(125, 216, 255, 0.85)';
+    ctx.shadowColor = rgba(accent, 0.85);
     ctx.shadowBlur = hover ? blur * 1.3 : blur;
-    ctx.fillStyle = '#bdeeff';
+    ctx.fillStyle = '#f4fbff';
     ctx.fillText(title, size / 2, cursorY);
   });
   ctx.shadowBlur = 0;
-  ctx.fillStyle = '#f4fbff';
+  ctx.fillStyle = '#ffffff';
   ctx.fillText(title, size / 2, cursorY);
   cursorY += titleFont;
 
@@ -296,7 +356,7 @@ function makeLabelTexture(modelName, hover, subtitle) {
     cursorY += subtitleGap;
     ctx.font = '600 ' + subtitleFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
     try { ctx.letterSpacing = '1px'; } catch (e) {}
-    ctx.fillStyle = 'rgba(190, 226, 255, 0.7)';
+    ctx.fillStyle = rgba(accent, 0.8);
     ctx.fillText(subtitle.toUpperCase(), size / 2, cursorY);
     cursorY += subtitleFont;
   }
@@ -304,9 +364,9 @@ function makeLabelTexture(modelName, hover, subtitle) {
 
   /* thin accent rule */
   const ruleWidth = plateW * 0.3;
-  ctx.shadowColor = 'rgba(125, 216, 255, 0.7)';
+  ctx.shadowColor = rgba(accent, 0.7);
   ctx.shadowBlur = 12;
-  ctx.fillStyle = 'rgba(125, 216, 255, 0.9)';
+  ctx.fillStyle = rgba(accent, 0.95);
   ctx.fillRect(size / 2 - ruleWidth / 2, cursorY, ruleWidth, ruleH);
   ctx.shadowBlur = 0;
   cursorY += ruleH + captionGap;
@@ -314,7 +374,7 @@ function makeLabelTexture(modelName, hover, subtitle) {
   /* explicit button affordance, brighter on hover */
   ctx.font = '700 ' + captionFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
   try { ctx.letterSpacing = '3px'; } catch (e) {}
-  ctx.fillStyle = hover ? 'rgba(220, 245, 255, 0.95)' : 'rgba(190, 226, 255, 0.75)';
+  ctx.fillStyle = hover ? '#f4fbff' : rgba(accent, 0.8);
   ctx.fillText('TAP TO OPEN ↗', size / 2, cursorY);
 
   const tex = new THREE.CanvasTexture(canvas);
@@ -335,24 +395,27 @@ function faceQuaternion(normal, up) {
 }
 
 /* one open-weight model per face — opposite faces sum to seven, same
-   arrangement as a standard d6 */
+   arrangement as a standard d6. Each carries its own accent hue, pulled
+   from colors already in play elsewhere on the site (the nebula's blue and
+   violet, the inventory page's "ok" green, Heretic's warning red) so the
+   palette feels like one family instead of six arbitrary colors. */
 const FACES = [
-  { normal: [0, 0, 1], up: new THREE.Vector3(0, 1, 0), model: 'Llama' },
-  { normal: [0, 0, -1], up: new THREE.Vector3(0, 1, 0), model: 'DeepSeek' },
-  { normal: [1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Mistral' },
-  { normal: [-1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Phi' },
-  { normal: [0, 1, 0], up: new THREE.Vector3(0, 0, -1), model: 'Gemma' },
-  { normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Heretic', subtitle: 'Qwen 27B · Q8_0' },
+  { normal: [0, 0, 1], up: new THREE.Vector3(0, 1, 0), model: 'Llama', accent: '#ffb454' },
+  { normal: [0, 0, -1], up: new THREE.Vector3(0, 1, 0), model: 'DeepSeek', accent: '#6896ff' },
+  { normal: [1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Mistral', accent: '#b478ff' },
+  { normal: [-1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Phi', accent: '#ff8fd0' },
+  { normal: [0, 1, 0], up: new THREE.Vector3(0, 0, -1), model: 'Gemma', accent: '#7cffb2' },
+  { normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Heretic', subtitle: 'Qwen 27B · Q8_0', accent: '#ff6c6c' },
 ];
 
 const LABEL_SIZE = S * 0.62;      // clears the 12mm edge fillet with margin to spare
 const LABEL_OFFSET = H + 0.0008;  // tiny standoff so the plane never z-fights the resin
 const labelMeshes = [];
 
-for (const { normal, up, model, subtitle } of FACES) {
+for (const { normal, up, model, subtitle, accent } of FACES) {
   const mat = new THREE.MeshBasicMaterial({
     name: 'label-' + model.toLowerCase(),
-    map: makeLabelTexture(model, false, subtitle),
+    map: makeLabelTexture(model, false, subtitle, accent),
     transparent: true,
     depthWrite: false,
   });
@@ -361,7 +424,8 @@ for (const { normal, up, model, subtitle } of FACES) {
   plane.position.set(...normal).multiplyScalar(LABEL_OFFSET);
   plane.quaternion.copy(faceQuaternion(normal, up));
   plane.userData.normalTex = mat.map;
-  plane.userData.hoverTex = makeLabelTexture(model, true, subtitle);
+  plane.userData.hoverTex = makeLabelTexture(model, true, subtitle, accent);
+  plane.userData.scaleTarget = 1;
   die.add(plane);
   labelMeshes.push(plane);
 }
@@ -450,11 +514,13 @@ canvasEl.addEventListener('pointermove', (evt) => {
     if (hoveredLabel) {
       hoveredLabel.material.map = hoveredLabel.userData.normalTex;
       hoveredLabel.material.needsUpdate = true;
+      hoveredLabel.userData.scaleTarget = 1;
     }
     hoveredLabel = hit;
     if (hoveredLabel) {
       hoveredLabel.material.map = hoveredLabel.userData.hoverTex;
       hoveredLabel.material.needsUpdate = true;
+      hoveredLabel.userData.scaleTarget = 1.06;
     }
   }
   canvasEl.style.cursor = hit ? 'pointer' : '';
@@ -473,6 +539,41 @@ canvasEl.addEventListener('pointerup', (evt) => {
     window.open('http://localhost:11434', '_blank', 'noopener');
   }
 });
+
+/* ---- idle turntable spin + hover-lift, both driven by real elapsed time
+   instead of a fixed per-frame step. three.js's own OrbitControls.autoRotate
+   assumes 60 calls/sec and adds the same fixed angle on every call — so on
+   a 75Hz/120Hz display it doesn't get smoother, it gets faster, since the
+   same-size step now happens more often per second. Rotating the die group
+   itself by (radians/sec * real dt) instead gives identical speed and
+   genuinely smoother motion at any refresh rate. Stops on first manual
+   drag, same as the old autoRotate behavior did. ---- */
+const SPIN_SPEED = (2 * Math.PI / 60) * 1.2; // ~one revolution per 50s, matching the old autoRotateSpeed=1.2 feel
+let autoSpin = true;
+stage._controls.addEventListener('start', () => { autoSpin = false; });
+
+let lastFrameT = performance.now();
+function animate(t) {
+  const dt = Math.min((t - lastFrameT) / 1000, 0.05); // clamp so a backgrounded tab doesn't jump-spin on return
+  lastFrameT = t;
+
+  if (autoSpin) die.rotation.y += SPIN_SPEED * dt;
+
+  /* exponential smoothing toward each label's target scale — frame-rate
+     independent, unlike a fixed per-frame lerp factor would be */
+  const smoothing = 1 - Math.exp(-dt * 14);
+  for (const plane of labelMeshes) {
+    const target = plane.userData.scaleTarget;
+    const current = plane.scale.x;
+    if (Math.abs(target - current) > 0.0005) {
+      const next = current + (target - current) * smoothing;
+      plane.scale.setScalar(next);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 </script>
 
 <script>
@@ -497,7 +598,7 @@ canvasEl.addEventListener('pointerup', (evt) => {
       life: 1,
       trail: [],
     });
-    nextCometAt = t + 6000 + Math.random() * 9000;
+    nextCometAt = t + 3500 + Math.random() * 5500;
   }
 
   /* Real starlight varies by temperature — mostly white, with a minority
@@ -519,13 +620,21 @@ canvasEl.addEventListener('pointerup', (evt) => {
       base: Math.random() * 0.4 + 0.6,
       phase: Math.random() * Math.PI * 2,
       speed: Math.random() * 0.5 + 0.15,
+      // a hair of downward parallax drift per star, wrapping at the bottom —
+      // slow enough to read as "distant motion," not a falling-star effect
+      drift: (Math.random() * 0.5 + 0.15) * dpr,
       color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
     }));
   }
 
+  let lastStarT = 0;
   function frame(t) {
+    const dt = lastStarT ? Math.min((t - lastStarT) / 1000, 0.05) : 0;
+    lastStarT = t;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const s of stars) {
+      s.y += s.drift * dt;
+      if (s.y > canvas.height) s.y -= canvas.height;
       const a = Math.min(1, s.base * (0.65 + 0.35 * Math.sin(t * 0.0012 * s.speed + s.phase)));
       const big = s.r > 1.6 * dpr;
       const [r, g, b] = s.color;
