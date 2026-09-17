@@ -159,9 +159,16 @@
   }
   .page-card h1 { font-size: 25px; margin: 0 0 6px; line-height: 1.25; word-break: break-word; }
   .page-card h1 .quant { color: var(--accent); }
-  .page-card .source { margin: 0 0 28px; font-size: 13px; color: var(--text-faint); word-break: break-all; }
+  .page-card .source { margin: 0 0 14px; font-size: 13px; color: var(--text-faint); word-break: break-all; }
   .page-card .source a { color: var(--text-dim); text-decoration: none; border-bottom: 1px dotted currentColor; }
   .page-card .source a:hover { color: var(--accent); }
+  .page-card .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 28px; }
+  .page-card .tag {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+    background: var(--warn-dim); color: var(--warn);
+    border: 1px solid rgba(255, 180, 84, 0.35);
+  }
   .page-card h2 {
     font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
     color: var(--text-dim); margin: 28px 0 10px;
@@ -371,6 +378,11 @@
       <p class="source">
         <a href="https://huggingface.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF" target="_blank" rel="noopener">hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF</a>
       </p>
+      <div class="tags">
+        <span class="tag">Uncensored</span>
+        <span class="tag">No Filter</span>
+        <span class="tag">NSFW</span>
+      </div>
 
       <h2>Run it</h2>
       <div class="cmd-row">
@@ -386,10 +398,14 @@
         <div><dt>Recommended RAM</dt><dd>32 GB+ (or matching VRAM)</dd></div>
         <div><dt>Prerequisite</dt><dd>Ollama installed &amp; running</dd></div>
         <div><dt>First run</dt><dd>Downloads GGUF from Hugging Face</dd></div>
+        <div><dt>Format</dt><dd>GGUF (llama.cpp-compatible)</dd></div>
+        <div><dt>Backend</dt><dd>Ollama, or any GGUF-capable runtime</dd></div>
+        <div><dt>Content policy</dt><dd>No refusals &mdash; NSFW-capable</dd></div>
+        <div><dt>Typical use</dt><dd>Unrestricted chat, roleplay, coding</dd></div>
       </dl>
 
       <div class="callout">
-        <strong>Uncensored / "Heretic" branding</strong> means safety training has been deliberately stripped or bypassed — expect no refusal behavior. Separately, the name bundles several unrelated proprietary and open lineages (DeepSeek V4 Pro, GLM 5.2, GPT-5.5) into one 27B model, which isn't technically coherent — treat that part of the name as community marketing, not a verified merge lineage, regardless of how the underlying weights actually perform.
+        <strong>Uncensored / "Heretic" branding</strong> means safety training has been deliberately stripped or bypassed — expect no refusal behavior, including on sexual (NSFW) and other normally-filtered content. Separately, the name bundles several unrelated proprietary and open lineages (DeepSeek V4 Pro, GLM 5.2, GPT-5.5) into one 27B model, which isn't technically coherent — treat that part of the name as community marketing, not a verified merge lineage, regardless of how the underlying weights actually perform. Nothing here is age-gated or access-controlled: since it runs entirely on your own hardware, you're responsible for how and where it's used.
       </div>
 
       <footer>
