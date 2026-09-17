@@ -266,6 +266,14 @@ function rgba(hex, a) {
    same color everywhere on the site. */
 const WARN_COLOR = '#ffb454';
 
+/* the vines mix colors from every face's palette rather than sticking to
+   whichever accent the face they're growing on happens to use — reads as
+   scattered RGB lighting instead of one uniform tint. */
+const VINE_PALETTE = ['#ff6c6c', '#ffb454', '#f4ff6c', '#7cffb2', '#6cf9ff', '#6896ff', '#b478ff', '#ff8fd0'];
+function randomVineColor() {
+  return VINE_PALETTE[Math.floor(Math.random() * VINE_PALETTE.length)];
+}
+
 function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagColor) {
   tagColor = tagColor || accent;
   const size = 512;
@@ -313,6 +321,7 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
      (count, length, curve, branches, buds) so the four corners never
      mirror each other — it should read as grown, not stamped. */
   function drawTendril(x, y, dx, dy, len, curveJitter, widthScale) {
+    const vc = randomVineColor();
     const endX = x + dx * len;
     const endY = y + dy * len;
     const bulge = (Math.random() * 0.5 + 0.3) * curveJitter;
@@ -323,15 +332,17 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
     ctx.moveTo(x, y);
     ctx.quadraticCurveTo(midX, midY, endX, endY);
     ctx.lineWidth = (hover ? 2.6 : 2.1) * widthScale;
-    ctx.strokeStyle = rgba(accent, hover ? 0.7 : 0.5);
-    ctx.shadowColor = rgba(accent, 0.9);
+    ctx.strokeStyle = rgba(vc, hover ? 0.7 : 0.5);
+    ctx.shadowColor = rgba(vc, 0.9);
     ctx.shadowBlur = hover ? 13 : 9;
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // zero, one or two offshoot branches at random points along the tendril
+    // zero, one or two offshoot branches at random points along the tendril,
+    // each in its own random color so the mix keeps changing along the vine
     const branchCount = Math.floor(Math.random() * 3);
     for (let b = 0; b < branchCount; b++) {
+      const bc = randomVineColor();
       const t = 0.3 + Math.random() * 0.5;
       const bx = x + dx * len * t;
       const by = y + dy * len * t;
@@ -343,27 +354,33 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
       ctx.moveTo(bx, by);
       ctx.quadraticCurveTo((bx + bex) / 2, (by + bey) / 2 - side * 10, bex, bey);
       ctx.lineWidth = (hover ? 1.8 : 1.5) * widthScale;
+      ctx.strokeStyle = rgba(bc, hover ? 0.7 : 0.5);
+      ctx.shadowColor = rgba(bc, 0.9);
+      ctx.shadowBlur = hover ? 13 : 9;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       // a bud at the tip of the branch
       ctx.beginPath();
-      ctx.fillStyle = rgba(accent, hover ? 0.95 : 0.75);
-      ctx.shadowColor = rgba(accent, 1);
+      ctx.fillStyle = rgba(bc, hover ? 0.95 : 0.75);
+      ctx.shadowColor = rgba(bc, 1);
       ctx.shadowBlur = hover ? 12 : 8;
       ctx.arc(bex, bey, 2.6 + Math.random() * 1.4, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     }
 
-    // a random scatter of luminous buds along the main tendril itself
+    // a random scatter of luminous buds along the main tendril itself,
+    // each its own random color for a true mixed-RGB scatter
     const budCount = 2 + Math.floor(Math.random() * 3);
     for (let k = 0; k < budCount; k++) {
+      const kc = randomVineColor();
       const t = 0.2 + Math.random() * 0.75;
       const px = x + dx * len * t;
       const py = y + dy * len * t;
       ctx.beginPath();
-      ctx.fillStyle = rgba(accent, hover ? 0.95 : 0.75);
-      ctx.shadowColor = rgba(accent, 1);
+      ctx.fillStyle = rgba(kc, hover ? 0.95 : 0.75);
+      ctx.shadowColor = rgba(kc, 1);
       ctx.shadowBlur = hover ? 12 : 8;
       ctx.arc(px, py, 2.4 + Math.random() * 2, 0, Math.PI * 2);
       ctx.fill();
@@ -372,23 +389,32 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
   }
 
   function drawVines() {
-    const corners = [
+    // corners, growing diagonally inward, PLUS the midpoint of every edge,
+    // growing straight in — together these cover the whole border of the
+    // face, not just four corner clusters, so the vines read as spreading
+    // all over the die rather than as a small corner decoration
+    const anchors = [
       { x: 22, y: 22, dx: 1, dy: 1 },
       { x: size - 22, y: 22, dx: -1, dy: 1 },
       { x: 22, y: size - 22, dx: 1, dy: -1 },
       { x: size - 22, y: size - 22, dx: -1, dy: -1 },
+      { x: size / 2, y: 18, dx: 0, dy: 1 },
+      { x: size / 2, y: size - 18, dx: 0, dy: -1 },
+      { x: 18, y: size / 2, dx: 1, dy: 0 },
+      { x: size - 18, y: size / 2, dx: -1, dy: 0 },
     ];
-    corners.forEach(({ x, y, dx, dy }) => {
-      // one to three tendrils per corner, each with its own random angle
-      // spread away from the pure diagonal so they fan out unevenly
-      const tendrilCount = 1 + Math.floor(Math.random() * 3);
+    anchors.forEach(({ x, y, dx, dy }) => {
+      // two to four tendrils per anchor, each with its own random angle
+      // spread so they fan out unevenly and reach much further across
+      // the face than just the immediate corner/edge margin
+      const tendrilCount = 2 + Math.floor(Math.random() * 3);
       for (let i = 0; i < tendrilCount; i++) {
-        const spread = (Math.random() - 0.5) * 0.7;
+        const spread = (Math.random() - 0.5) * 1.1;
         const tdx = dx + spread * dy;
         const tdy = dy - spread * dx;
-        const mag = Math.hypot(tdx, tdy);
-        const len = 60 + Math.random() * 90;
-        drawTendril(x, y, tdx / mag, tdy / mag, len, 40, 0.75 + Math.random() * 0.5);
+        const mag = Math.hypot(tdx, tdy) || 1;
+        const len = 130 + Math.random() * 150;
+        drawTendril(x, y, tdx / mag, tdy / mag, len, 55, 0.65 + Math.random() * 0.55);
       }
     });
   }
