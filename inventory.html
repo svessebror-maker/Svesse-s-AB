@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Local AI Inventory</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --void-1: #05060a;
+    --void-2: #0a0e18;
+    --text: #eef1f8;
+    --text-dim: rgba(238, 241, 248, 0.6);
+    --text-faint: rgba(238, 241, 248, 0.32);
+    --accent: #7dd8ff;
+    --accent-dim: rgba(125, 216, 255, 0.35);
+    --ok: #7cffb2;
+    --ok-dim: rgba(124, 255, 178, 0.14);
+    --warn: #ffb454;
+    --warn-dim: rgba(255, 180, 84, 0.14);
+    --pending: rgba(238, 241, 248, 0.5);
+    --pending-dim: rgba(238, 241, 248, 0.08);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; min-height: 100%;
+    background: var(--void-1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    color: var(--text);
+  }
+
+  .space {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 90% 70% at 50% 12%, #1a2a45 0%, transparent 62%),
+      radial-gradient(ellipse 120% 90% at 50% 100%, var(--void-2) 0%, var(--void-1) 55%);
+  }
+  #stars { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; }
+
+  main {
+    position: relative; z-index: 1;
+    max-width: 920px; margin: 0 auto;
+    padding: 40px 20px 64px;
+  }
+
+  header.page {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  header.page .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 10px 1px var(--accent-dim);
+  }
+  header.page .kicker {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  h1 { margin: 4px 0 6px; font-size: 28px; font-weight: 700; text-wrap: balance; }
+  .lede { margin: 0 0 28px; font-size: 13.5px; color: var(--text-dim); max-width: 62ch; line-height: 1.6; }
+  .lede code { font-family: var(--mono); color: var(--text); }
+
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: rgba(11, 20, 33, 0.55);
+    border: 1px solid rgba(125, 216, 255, 0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .stat .n { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-top: 2px; }
+  .stat.warn .n { color: var(--warn); }
+  .stat.ok .n { color: var(--ok); }
+
+  .tool-card {
+    background: rgba(11, 20, 33, 0.5);
+    border: 1px solid rgba(125, 216, 255, 0.22);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .tool-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 14px 18px;
+    border-bottom: 1px solid rgba(238, 241, 248, 0.08);
+  }
+  .tool-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+  .tool-head .path { display: block; margin-top: 2px; font-family: var(--mono); font-size: 11.5px; color: var(--text-faint); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip .dot2 { width: 6px; height: 6px; border-radius: 50%; }
+  .chip.ok { background: var(--ok-dim); color: var(--ok); }
+  .chip.ok .dot2 { background: var(--ok); }
+  .chip.warn { background: var(--warn-dim); color: var(--warn); }
+  .chip.warn .dot2 { background: var(--warn); }
+  .chip.pending { background: var(--pending-dim); color: var(--pending); }
+  .chip.pending .dot2 { background: var(--pending); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-faint); font-weight: 600;
+    padding: 8px 18px; border-bottom: 1px solid rgba(238, 241, 248, 0.08);
+  }
+  td { padding: 10px 18px; border-bottom: 1px solid rgba(238, 241, 248, 0.05); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; }
+  td.size, th.size { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .note { font-size: 11.5px; color: var(--text-faint); }
+  .empty-row td { padding: 16px 18px; color: var(--text-faint); font-size: 12.5px; font-style: italic; }
+
+  .table-wrap { overflow-x: auto; }
+
+  footer.page {
+    margin-top: 8px; font-size: 11.5px; color: var(--text-faint); line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+    .tool-head { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="space"></div>
+<canvas id="stars"></canvas>
+
+<main>
+  <header class="page">
+    <span class="dot"></span>
+    <span class="kicker">Svesse's Local AI</span>
+  </header>
+  <h1>Local AI Inventory</h1>
+  <p class="lede">
+    A running snapshot of models across every local AI tool, since everything is being consolidated under
+    <code>E:\AI-Models</code>. Status reflects what's actually been confirmed in this migration, not assumptions —
+    entries marked <strong>pending scan</strong> haven't been verified against the real filesystem yet.
+  </p>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="n">6</div>
+      <div class="l">Models tracked</div>
+    </div>
+    <div class="stat">
+      <div class="n">5</div>
+      <div class="l">Tools in use</div>
+    </div>
+    <div class="stat warn">
+      <div class="n">1</div>
+      <div class="l">Needs attention</div>
+    </div>
+    <div class="stat">
+      <div class="n">4</div>
+      <div class="l">Pending scan</div>
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-head">
+      <div>
+        <h2>Ollama</h2>
+        <span class="path">E:\AI-Models\ollama</span>
+      </div>
+      <span class="chip warn"><span class="dot2"></span>Needs attention</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Model</th><th>Note</th><th class="size">Status</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Llama</td><td class="note">On the die — no local size confirmed</td><td class="size">Unverified</td></tr>
+          <tr><td class="name">Mistral</td><td class="note">On the die — no local size confirmed</td><td class="size">Unverified</td></tr>
+          <tr><td class="name">Gemma</td><td class="note">On the die — no local size confirmed</td><td class="size">Unverified</td></tr>
+          <tr><td class="name">Phi</td><td class="note">On the die — no local size confirmed</td><td class="size">Unverified</td></tr>
+          <tr><td class="name">DeepSeek</td><td class="note">On the die — no local size confirmed</td><td class="size">Unverified</td></tr>
+          <tr><td class="name">Heretic <span class="note">(Qwen3.6-27B, Q8_0)</span></td><td class="note">See model-heretic.html for full run details</td><td class="size">~29 GB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding: 12px 18px 16px;" class="note">
+      <code style="font-family: var(--mono);">blobs\</code> and <code style="font-family: var(--mono);">manifests\</code> came back empty at both
+      <code style="font-family: var(--mono);">E:\AI-Models\ollama</code> and the original
+      <code style="font-family: var(--mono);">C:\Users\Svesse\.ollama\models</code> —
+      <code style="font-family: var(--mono);">ollama list</code> shows nothing until the actual model data is located and moved in.
+    </div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-head">
+      <div>
+        <h2>ComfyUI</h2>
+        <span class="path">E:\AI-Models\comfyui (planned)</span>
+      </div>
+      <span class="chip pending"><span class="dot2"></span>Pending scan</span>
+    </div>
+    <table>
+      <tbody>
+        <tr class="empty-row"><td colspan="3">Checkpoints, LoRAs, and VAEs not yet located — run the drive scan and this list fills in.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-head">
+      <div>
+        <h2>LM Studio</h2>
+        <span class="path">E:\AI-Models\lm-studio (planned)</span>
+      </div>
+      <span class="chip pending"><span class="dot2"></span>Pending scan</span>
+    </div>
+    <table>
+      <tbody>
+        <tr class="empty-row"><td colspan="3">Model folder not yet repointed in LM Studio's settings.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-head">
+      <div>
+        <h2>text-generation-webui</h2>
+        <span class="path">E:\AI-Models\text-generation-webui (planned)</span>
+      </div>
+      <span class="chip pending"><span class="dot2"></span>Pending scan</span>
+    </div>
+    <table>
+      <tbody>
+        <tr class="empty-row"><td colspan="3">Install location not yet confirmed.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tool-card">
+    <div class="tool-head">
+      <div>
+        <h2>SwarmUI</h2>
+        <span class="path">shares E:\AI-Models\comfyui</span>
+      </div>
+      <span class="chip pending"><span class="dot2"></span>Pending scan</span>
+    </div>
+    <table>
+      <tbody>
+        <tr class="empty-row"><td colspan="3">Configured to point at ComfyUI's model folder once that's confirmed — no separate copy needed.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="page">
+    This page reflects the state as of the last migration check in this session — it's a static snapshot, not a live scan.
+    Update it by hand (or ask for it to be regenerated) once <code style="font-family: var(--mono);">ollama list</code> and the
+    <code style="font-family: var(--mono);">E:\</code> drive scan actually come back with results.
+  </footer>
+</main>
+
+<script>
+  /* minimal dependency-free starfield, shared visual language with the rest of the site */
+  (() => {
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let stars = [];
+    const STAR_COLORS = [
+      [255, 255, 255], [255, 255, 255], [255, 255, 255], [255, 255, 255],
+      [190, 220, 255], [189, 238, 255], [255, 214, 170],
+    ];
+
+    function resize() {
+      canvas.width = Math.round(innerWidth * dpr);
+      canvas.height = Math.round(document.documentElement.scrollHeight * dpr);
+      canvas.style.height = document.documentElement.scrollHeight + 'px';
+      const count = Math.round((innerWidth * canvas.height / dpr) / 1800);
+      stars = Array.from({ length: count }, (_, i) => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: (i % 9 === 0 ? Math.random() * 1.6 + 1.8 : Math.random() * 1.1 + 0.7) * dpr,
+        base: Math.random() * 0.4 + 0.5,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.5 + 0.15,
+        color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
+      }));
+    }
+
+    function frame(t) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const s of stars) {
+        const a = Math.min(1, s.base * (0.65 + 0.35 * Math.sin(t * 0.0012 * s.speed + s.phase)));
+        const [r, g, b] = s.color;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(frame);
+  })();
+</script>
+</body>
+</html>
