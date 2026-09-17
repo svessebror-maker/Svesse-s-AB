@@ -180,6 +180,7 @@
 </div>
 
 <nav class="hud nav-banner">
+  <a href="get-started.html">Get Started</a>
   <a href="inventory.html">Inventory</a>
   <a href="model-heretic.html">Heretic Model</a>
   <a href="localai-hub.html">LocalAI Hub</a>
@@ -303,6 +304,95 @@ function makeLabelTexture(modelName, hover, subtitle, accent, tags, info, tagCol
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   }
+
+  /* glowing vine tendrils growing out of each corner, into the margin
+     around the button plate — a decorative flourish drawn straight into
+     this same texture (rather than a separate mesh) so there's no UV
+     mapping to fight on the extruded die body; every face gets its own
+     color since it uses that face's own accent. Randomized per tendril
+     (count, length, curve, branches, buds) so the four corners never
+     mirror each other — it should read as grown, not stamped. */
+  function drawTendril(x, y, dx, dy, len, curveJitter, widthScale) {
+    const endX = x + dx * len;
+    const endY = y + dy * len;
+    const bulge = (Math.random() * 0.5 + 0.3) * curveJitter;
+    const midX = x + dx * len * (0.4 + Math.random() * 0.3) + dy * bulge;
+    const midY = y + dy * len * (0.4 + Math.random() * 0.3) - dx * bulge;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(midX, midY, endX, endY);
+    ctx.lineWidth = (hover ? 2.6 : 2.1) * widthScale;
+    ctx.strokeStyle = rgba(accent, hover ? 0.7 : 0.5);
+    ctx.shadowColor = rgba(accent, 0.9);
+    ctx.shadowBlur = hover ? 13 : 9;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // zero, one or two offshoot branches at random points along the tendril
+    const branchCount = Math.floor(Math.random() * 3);
+    for (let b = 0; b < branchCount; b++) {
+      const t = 0.3 + Math.random() * 0.5;
+      const bx = x + dx * len * t;
+      const by = y + dy * len * t;
+      const side = Math.random() < 0.5 ? 1 : -1;
+      const blen = len * (0.25 + Math.random() * 0.3);
+      const bex = bx + dy * side * blen;
+      const bey = by - dx * side * blen;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo((bx + bex) / 2, (by + bey) / 2 - side * 10, bex, bey);
+      ctx.lineWidth = (hover ? 1.8 : 1.5) * widthScale;
+      ctx.stroke();
+
+      // a bud at the tip of the branch
+      ctx.beginPath();
+      ctx.fillStyle = rgba(accent, hover ? 0.95 : 0.75);
+      ctx.shadowColor = rgba(accent, 1);
+      ctx.shadowBlur = hover ? 12 : 8;
+      ctx.arc(bex, bey, 2.6 + Math.random() * 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // a random scatter of luminous buds along the main tendril itself
+    const budCount = 2 + Math.floor(Math.random() * 3);
+    for (let k = 0; k < budCount; k++) {
+      const t = 0.2 + Math.random() * 0.75;
+      const px = x + dx * len * t;
+      const py = y + dy * len * t;
+      ctx.beginPath();
+      ctx.fillStyle = rgba(accent, hover ? 0.95 : 0.75);
+      ctx.shadowColor = rgba(accent, 1);
+      ctx.shadowBlur = hover ? 12 : 8;
+      ctx.arc(px, py, 2.4 + Math.random() * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  function drawVines() {
+    const corners = [
+      { x: 22, y: 22, dx: 1, dy: 1 },
+      { x: size - 22, y: 22, dx: -1, dy: 1 },
+      { x: 22, y: size - 22, dx: 1, dy: -1 },
+      { x: size - 22, y: size - 22, dx: -1, dy: -1 },
+    ];
+    corners.forEach(({ x, y, dx, dy }) => {
+      // one to three tendrils per corner, each with its own random angle
+      // spread away from the pure diagonal so they fan out unevenly
+      const tendrilCount = 1 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < tendrilCount; i++) {
+        const spread = (Math.random() - 0.5) * 0.7;
+        const tdx = dx + spread * dy;
+        const tdy = dy - spread * dx;
+        const mag = Math.hypot(tdx, tdy);
+        const len = 60 + Math.random() * 90;
+        drawTendril(x, y, tdx / mag, tdy / mag, len, 40, 0.75 + Math.random() * 0.5);
+      }
+    });
+  }
+  drawVines();
 
   /* button plate: filled + glowing, brighter border and fill on hover.
      Blur radii run bigger across the board than a typical UI glow — this
