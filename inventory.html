@@ -229,6 +229,103 @@
     .page-card { padding: 26px 22px 24px; }
     .page-card .specs { grid-template-columns: 1fr; }
   }
+
+  /* — Builder tab: runs workflows for real against Ollama's local API
+     (http://localhost:11434) instead of just generating a script to
+     copy-paste — "automatic" means the page does the calling, not you. */
+  .builder-note {
+    background: var(--warn-dim);
+    border: 1px solid rgba(255, 180, 84, 0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 12.5px; color: #ffe3bd; line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .builder-note strong { color: var(--warn); }
+  .builder-note code { font-family: var(--mono); background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+
+  .task-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .task-card {
+    text-align: left; appearance: none; cursor: pointer;
+    background: rgba(11, 20, 33, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 16px 18px;
+    color: var(--text); font: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .task-card:hover { border-color: rgba(125, 216, 255, 0.4); transform: translateY(-2px); }
+  .task-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 24px -6px var(--accent);
+    background: rgba(20, 28, 40, 0.75);
+  }
+  .task-card .tc-name { font-size: 14px; font-weight: 700; }
+  .task-card .tc-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+  .task-card .tc-models { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); }
+
+  .field-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .field { flex: 1 1 200px; min-width: 0; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px;
+  }
+  select, input[type="text"] {
+    width: 100%; box-sizing: border-box;
+    background: rgba(11, 20, 33, 0.6);
+    border: 1px solid rgba(125, 216, 255, 0.28);
+    border-radius: 10px;
+    color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600;
+    padding: 11px 14px;
+  }
+  select { appearance: none; cursor: pointer; padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%237dd8ff' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+  }
+  select:focus-visible, input[type="text"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input[type="file"] {
+    display: block; width: 100%; font-size: 12.5px; color: var(--text-dim);
+  }
+  .model-warn { margin-top: 8px; font-size: 11.5px; color: var(--warn); line-height: 1.5; }
+
+  .run-btn {
+    appearance: none; cursor: pointer;
+    background: rgba(125, 216, 255, 0.16);
+    border: 1px solid rgba(125, 216, 255, 0.45);
+    border-radius: 10px;
+    color: var(--accent); font: inherit; font-size: 13px; font-weight: 700;
+    padding: 12px 24px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .run-btn:hover { background: rgba(125, 216, 255, 0.26); }
+  .run-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .result-box {
+    margin-top: 20px;
+    background: rgba(5, 8, 14, 0.6);
+    border: 1px solid rgba(125, 216, 255, 0.22);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 13px; line-height: 1.6; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .result-box.error { border-color: rgba(255, 108, 108, 0.4); color: #ffb3b3; }
+  .result-box .r-label {
+    display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px;
+  }
+  .result-box + .result-box { margin-top: 12px; }
+  .download-btn {
+    margin-top: 12px; display: inline-flex;
+    appearance: none; cursor: pointer;
+    background: var(--ok-dim); border: 1px solid rgba(124, 255, 178, 0.4);
+    border-radius: 10px; color: var(--ok); font: inherit; font-size: 12.5px; font-weight: 700;
+    padding: 9px 16px;
+  }
 </style>
 </head>
 <body>
@@ -244,6 +341,7 @@
   <div class="pagenav" role="tablist" aria-label="Pages">
     <button type="button" role="tab" id="tab-inventory" aria-controls="page-inventory" aria-selected="true">Inventory</button>
     <button type="button" role="tab" id="tab-heretic" aria-controls="page-heretic" aria-selected="false">Heretic Model</button>
+    <button type="button" role="tab" id="tab-builder" aria-controls="page-builder" aria-selected="false">Builder</button>
   </div>
 
   <section id="page-inventory" role="tabpanel" aria-labelledby="tab-inventory">
@@ -413,31 +511,132 @@
       </footer>
     </div>
   </section>
+
+  <section id="page-builder" role="tabpanel" aria-labelledby="tab-builder" hidden>
+    <div class="page-card">
+      <div class="kicker" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span class="dot" style="width:6px;height:6px;"></span>Runs against your local Ollama
+      </div>
+      <h1>Workflow Builder</h1>
+      <p class="lede">
+        Pick a task, pick a model, hit run — this actually calls your local Ollama server
+        (<code style="font-family:var(--mono);">http://localhost:11434</code>) from this page and shows you the
+        real output. Nothing is copy-pasted into a terminal; it's a live request from your browser to Ollama.
+      </p>
+
+      <div class="builder-note">
+        <strong>One-time setup:</strong> Ollama blocks cross-origin browser requests by default, so a page opened as a
+        local file (or from a different origin) can't reach it until you allow it. Set the environment variable
+        <code>OLLAMA_ORIGINS=*</code> before starting Ollama (Windows PowerShell:
+        <code>$env:OLLAMA_ORIGINS="*"; ollama serve</code>), then keep <code>ollama serve</code> running in that window.
+        If a run below fails with a network/CORS error, this is almost always why.
+      </div>
+
+      <h2>1. Pick a task</h2>
+      <div class="task-grid" id="taskGrid">
+        <button type="button" class="task-card" data-task="chat">
+          <span class="tc-name">Simple Chat</span>
+          <span class="tc-desc">Send one prompt, get one answer back.</span>
+          <span class="tc-models">Any model</span>
+        </button>
+        <button type="button" class="task-card" data-task="summarize">
+          <span class="tc-name">Summarize a File</span>
+          <span class="tc-desc">Load a text file and get a summary of it.</span>
+          <span class="tc-models">Good with Llama, Mistral</span>
+        </button>
+        <button type="button" class="task-card" data-task="batch">
+          <span class="tc-name">Batch Process a Folder</span>
+          <span class="tc-desc">Run the same prompt over every file in a folder, one by one.</span>
+          <span class="tc-models">Good with Phi, Gemma (fast)</span>
+        </button>
+        <button type="button" class="task-card" data-task="refine">
+          <span class="tc-name">Draft, then Refine</span>
+          <span class="tc-desc">Write a first draft, then automatically ask a model to improve it.</span>
+          <span class="tc-models">Good with DeepSeek, Heretic</span>
+        </button>
+      </div>
+
+      <div id="builderForm" hidden>
+        <h2>2. Configure &amp; run</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="modelSelect">Model</label>
+            <select id="modelSelect">
+              <option value="llama3.2">Llama 3.2</option>
+              <option value="deepseek-r1">DeepSeek R1</option>
+              <option value="mistral">Mistral</option>
+              <option value="phi4">Phi 4</option>
+              <option value="gemma2">Gemma 2</option>
+              <option value="hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF:Q8_0">Heretic (Qwen 27B)</option>
+            </select>
+            <div class="model-warn" id="modelWarn" hidden>
+              This must match the exact name Ollama has already pulled (check with <code style="font-family:var(--mono)">ollama list</code>) — otherwise Ollama will try to download it on first run.
+            </div>
+          </div>
+          <div class="field" id="refineModelField" hidden>
+            <label for="refineModelSelect">Refine with</label>
+            <select id="refineModelSelect">
+              <option value="deepseek-r1">DeepSeek R1</option>
+              <option value="llama3.2">Llama 3.2</option>
+              <option value="mistral">Mistral</option>
+              <option value="hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF:Q8_0">Heretic (Qwen 27B)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" id="promptField">
+          <label id="promptLabel" for="promptInput">Prompt</label>
+          <input type="text" id="promptInput" placeholder="Ask anything…">
+        </div>
+
+        <div class="field" id="fileField" hidden>
+          <label id="fileLabel" for="fileInput">File</label>
+          <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.log">
+        </div>
+
+        <div class="field" id="folderField" hidden>
+          <label for="folderInput">Folder</label>
+          <input type="file" id="folderInput" webkitdirectory directory multiple>
+        </div>
+
+        <div class="field" id="refineField" hidden>
+          <label for="refineInput">Refine instruction</label>
+          <input type="text" id="refineInput" placeholder="e.g. make it punchier and cut it in half" value="Improve clarity, fix any errors, and tighten the writing.">
+        </div>
+
+        <button type="button" class="run-btn" id="runBtn">Run workflow</button>
+        <span id="runStatus" style="margin-left:12px;font-size:12.5px;color:var(--text-dim);"></span>
+
+        <div id="results"></div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <script>
-  const tabInventory = document.getElementById('tab-inventory');
-  const tabHeretic = document.getElementById('tab-heretic');
-  const pageInventory = document.getElementById('page-inventory');
-  const pageHeretic = document.getElementById('page-heretic');
+  const PAGES = ['inventory', 'heretic', 'builder'];
+  const tabs = Object.fromEntries(PAGES.map(name => [name, document.getElementById('tab-' + name)]));
+  const pages = Object.fromEntries(PAGES.map(name => [name, document.getElementById('page-' + name)]));
 
   function showPage(name) {
-    const onHeretic = name === 'heretic';
-    pageInventory.hidden = onHeretic;
-    pageHeretic.hidden = !onHeretic;
-    tabInventory.setAttribute('aria-selected', String(!onHeretic));
-    tabHeretic.setAttribute('aria-selected', String(onHeretic));
+    if (!pages[name]) name = 'inventory';
+    for (const p of PAGES) {
+      pages[p].hidden = p !== name;
+      tabs[p].setAttribute('aria-selected', String(p === name));
+    }
     try { localStorage.setItem('inventory-page', name); } catch (e) {}
     // the starfield canvas is sized to page scrollHeight, which changes a
-    // lot between the two tabs — re-measure once the new layout settles
+    // lot between tabs — re-measure once the new layout settles
     requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
   }
 
-  tabInventory.addEventListener('click', () => showPage('inventory'));
-  tabHeretic.addEventListener('click', () => showPage('heretic'));
+  for (const name of PAGES) {
+    tabs[name].addEventListener('click', () => showPage(name));
+  }
 
   try {
-    if (localStorage.getItem('inventory-page') === 'heretic') showPage('heretic');
+    const saved = localStorage.getItem('inventory-page');
+    if (saved && saved !== 'inventory') showPage(saved);
   } catch (e) {}
 
   const copyBtn = document.getElementById('copyBtn');
@@ -452,6 +651,173 @@
       copyBtn.textContent = 'Select & copy manually';
     }
   });
+</script>
+
+<script>
+  /* Builder tab: actually calls the local Ollama server, no copy-paste scripts */
+  (() => {
+    const OLLAMA_URL = 'http://localhost:11434/api/generate';
+
+    const taskGrid = document.getElementById('taskGrid');
+    const builderForm = document.getElementById('builderForm');
+    const promptField = document.getElementById('promptField');
+    const promptLabel = document.getElementById('promptLabel');
+    const promptInput = document.getElementById('promptInput');
+    const fileField = document.getElementById('fileField');
+    const fileInput = document.getElementById('fileInput');
+    const folderField = document.getElementById('folderField');
+    const folderInput = document.getElementById('folderInput');
+    const refineField = document.getElementById('refineField');
+    const refineInput = document.getElementById('refineInput');
+    const refineModelField = document.getElementById('refineModelField');
+    const modelSelect = document.getElementById('modelSelect');
+    const refineModelSelect = document.getElementById('refineModelSelect');
+    const runBtn = document.getElementById('runBtn');
+    const runStatus = document.getElementById('runStatus');
+    const results = document.getElementById('results');
+
+    let currentTask = null;
+
+    const TASK_UI = {
+      chat: { prompt: true, promptLabel: 'Prompt', file: false, folder: false, refine: false },
+      summarize: { prompt: false, promptLabel: '', file: true, folder: false, refine: false },
+      batch: { prompt: true, promptLabel: 'Prompt to run on every file', file: false, folder: true, refine: false },
+      refine: { prompt: true, promptLabel: 'Topic / draft prompt', file: false, folder: false, refine: true },
+    };
+
+    taskGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.task-card');
+      if (!card) return;
+      currentTask = card.dataset.task;
+      for (const c of taskGrid.querySelectorAll('.task-card')) c.classList.toggle('selected', c === card);
+
+      const ui = TASK_UI[currentTask];
+      promptField.hidden = !ui.prompt;
+      promptLabel.textContent = ui.promptLabel;
+      fileField.hidden = !ui.file;
+      folderField.hidden = !ui.folder;
+      refineField.hidden = !ui.refine;
+      refineModelField.hidden = !ui.refine;
+      results.innerHTML = '';
+      builderForm.hidden = false;
+    });
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+    }
+
+    async function ollamaGenerate(model, prompt) {
+      const res = await fetch(OLLAMA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, prompt, stream: false }),
+      });
+      if (!res.ok) throw new Error(`Ollama returned ${res.status} ${res.statusText}`);
+      const data = await res.json();
+      return data.response;
+    }
+
+    function addResult(label, text, isError) {
+      const box = document.createElement('div');
+      box.className = 'result-box' + (isError ? ' error' : '');
+      const labelEl = document.createElement('span');
+      labelEl.className = 'r-label';
+      labelEl.textContent = label;
+      box.appendChild(labelEl);
+      box.appendChild(document.createTextNode(text));
+      results.appendChild(box);
+
+      if (!isError) {
+        const dl = document.createElement('button');
+        dl.type = 'button';
+        dl.className = 'download-btn';
+        dl.textContent = 'Download result (.txt)';
+        dl.addEventListener('click', () => {
+          const blob = new Blob([text], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = label.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.txt';
+          a.click();
+          URL.revokeObjectURL(url);
+        });
+        box.appendChild(dl);
+      }
+      return box;
+    }
+
+    function friendlyError(err) {
+      const msg = String(err && err.message || err);
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
+        return 'Could not reach Ollama at localhost:11434. Make sure "ollama serve" is running, ' +
+          'and that OLLAMA_ORIGINS is set (see the setup note above) so it accepts requests from this page.';
+      }
+      return msg;
+    }
+
+    runBtn.addEventListener('click', async () => {
+      if (!currentTask) return;
+      results.innerHTML = '';
+      runBtn.disabled = true;
+      const model = modelSelect.value;
+
+      try {
+        if (currentTask === 'chat') {
+          runStatus.textContent = 'Asking ' + model + '…';
+          const out = await ollamaGenerate(model, promptInput.value.trim());
+          addResult(model, out);
+
+        } else if (currentTask === 'summarize') {
+          const file = fileInput.files[0];
+          if (!file) { runStatus.textContent = 'Pick a file first.'; runBtn.disabled = false; return; }
+          runStatus.textContent = 'Reading ' + file.name + '…';
+          const text = await readFileAsText(file);
+          runStatus.textContent = 'Summarizing with ' + model + '…';
+          const out = await ollamaGenerate(model, `Summarize the following file concisely:\n\n${text}`);
+          addResult('Summary of ' + file.name, out);
+
+        } else if (currentTask === 'batch') {
+          const files = Array.from(folderInput.files || []);
+          if (!files.length) { runStatus.textContent = 'Pick a folder first.'; runBtn.disabled = false; return; }
+          const task = promptInput.value.trim() || 'Summarize this file.';
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            runStatus.textContent = `Processing ${i + 1}/${files.length}: ${file.name}…`;
+            try {
+              const text = await readFileAsText(file);
+              const out = await ollamaGenerate(model, `${task}\n\nFile: ${file.name}\n\n${text}`);
+              addResult(file.name, out);
+            } catch (err) {
+              addResult(file.name, friendlyError(err), true);
+            }
+          }
+
+        } else if (currentTask === 'refine') {
+          const topic = promptInput.value.trim();
+          runStatus.textContent = 'Drafting with ' + model + '…';
+          const draft = await ollamaGenerate(model, topic);
+          addResult(model + ' — draft', draft);
+
+          const refineModel = refineModelSelect.value;
+          runStatus.textContent = 'Refining with ' + refineModel + '…';
+          const instruction = refineInput.value.trim() || 'Improve this.';
+          const refined = await ollamaGenerate(refineModel, `${instruction}\n\n${draft}`);
+          addResult(refineModel + ' — refined', refined);
+        }
+        runStatus.textContent = 'Done.';
+      } catch (err) {
+        addResult('Error', friendlyError(err), true);
+        runStatus.textContent = '';
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+  })();
 </script>
 
 <script>
