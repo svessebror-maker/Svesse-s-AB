@@ -662,6 +662,8 @@ requestAnimationFrame(animate);
   let stars = [];
   let comets = [];
   let nextCometAt = 0;
+  let rockets = [];
+  let nextRocketAt = 9000;
 
   function spawnComet(t) {
     const fromLeft = Math.random() < 0.5;
@@ -675,7 +677,28 @@ requestAnimationFrame(animate);
       life: 1,
       trail: [],
     });
-    nextCometAt = t + 3500 + Math.random() * 5500;
+    // noticeably busier sky — a shooting star every second or two instead
+    // of every several seconds, and often more than one on screen at once
+    nextCometAt = t + 900 + Math.random() * 1800;
+  }
+
+  /* a rare, silly easter egg — a tiny rocket coasting across the upper
+     sky. Not a likeness of anyone real (emoji only, no portrait), just a
+     wink at "a rocket passing by." Spawns roughly every couple of minutes,
+     rare enough to be a nice surprise rather than a distraction. */
+  function spawnRocket(t) {
+    const fromLeft = Math.random() < 0.5;
+    const dir = fromLeft ? 1 : -1;
+    const speed = (Math.random() * 2 + 3.5) * dpr;
+    rockets.push({
+      x: fromLeft ? -60 * dpr : canvas.width + 60 * dpr,
+      y: canvas.height * (0.1 + Math.random() * 0.3),
+      vx: dir * speed,
+      vy: -speed * 0.22,
+      dir,
+      trail: [],
+    });
+    nextRocketAt = t + 70000 + Math.random() * 60000;
   }
 
   /* Real starlight varies by temperature — mostly white, with a minority
@@ -743,6 +766,31 @@ requestAnimationFrame(animate);
       });
     });
     comets = comets.filter((c) => c.life > 0 && c.x > -80 && c.x < canvas.width + 80 && c.y < canvas.height + 80);
+
+    if (t > nextRocketAt) spawnRocket(t);
+    rockets.forEach((rk) => {
+      rk.trail.push({ x: rk.x, y: rk.y });
+      if (rk.trail.length > 20) rk.trail.shift();
+      rk.x += rk.vx;
+      rk.y += rk.vy;
+      const n = rk.trail.length;
+      rk.trail.forEach((p, i) => {
+        const a = (i / n) * 0.55;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 176, 120, ${a.toFixed(3)})`;
+        ctx.arc(p.x, p.y, 2.4 * dpr * (i / n), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.save();
+      ctx.translate(rk.x, rk.y);
+      if (rk.dir < 0) ctx.scale(-1, 1); // mirror so it still points the way it's flying
+      ctx.font = (26 * dpr) + 'px -apple-system, "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🚀', 0, 0);
+      ctx.restore();
+    });
+    rockets = rockets.filter((rk) => rk.x > -100 * dpr && rk.x < canvas.width + 100 * dpr);
 
     requestAnimationFrame(frame);
   }
