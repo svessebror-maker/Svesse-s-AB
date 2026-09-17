@@ -100,6 +100,8 @@
 
   .brand {
     top: var(--edge, 28px); left: var(--edge, 28px);
+  }
+  .brand .brand-row {
     display: flex; align-items: center; gap: 10px;
   }
   .brand .dot {
@@ -113,6 +115,23 @@
   .brand .sub {
     display: block; margin-top: 3px; margin-left: 17px;
     font-size: 10.5px; letter-spacing: 0.08em; color: var(--text-faint);
+  }
+
+  /* secondary pages hang off the die, not the other way around — a quiet
+     two-link row under the brand mark, not a full nav bar */
+  .brand .subnav {
+    display: flex; gap: 14px;
+    margin-top: 9px; margin-left: 17px;
+  }
+  .brand .subnav a {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-faint); text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .brand .subnav a:hover, .brand .subnav a:focus-visible {
+    color: var(--accent); border-color: var(--accent-dim);
   }
 
   .specs {
@@ -136,9 +155,15 @@
 <div class="die-glow"></div>
 
 <div class="hud brand">
-  <span class="dot"></span>
-  <span class="label">Svesse's Local AI</span>
+  <div class="brand-row">
+    <span class="dot"></span>
+    <span class="label">Svesse's Local AI</span>
+  </div>
   <span class="sub">Interactive 3D &middot; Rev 03</span>
+  <nav class="subnav">
+    <a href="inventory.html">Inventory</a>
+    <a href="model-heretic.html">Heretic Model</a>
+  </nav>
 </div>
 
 <div class="hud specs">
