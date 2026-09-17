@@ -121,9 +121,106 @@
     margin-top: 8px; font-size: 11.5px; color: var(--text-faint); line-height: 1.6;
   }
 
+  .pagenav {
+    display: inline-flex; gap: 4px;
+    background: rgba(11, 20, 33, 0.6);
+    border: 1px solid rgba(125, 216, 255, 0.22);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 22px;
+  }
+  .pagenav button {
+    appearance: none; border: none; cursor: pointer;
+    font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--text-dim);
+    background: transparent;
+    padding: 7px 16px;
+    border-radius: 999px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .pagenav button:hover { color: var(--text); }
+  .pagenav button[aria-selected="true"] {
+    background: rgba(125, 216, 255, 0.16);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px rgba(125, 216, 255, 0.4);
+  }
+  .pagenav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .page-card {
+    width: min(640px, 100%);
+    background: rgba(11, 20, 33, 0.55);
+    border: 1px solid rgba(125, 216, 255, 0.28);
+    border-radius: 18px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 30px 80px -20px rgba(0,0,0,0.6), 0 0 60px -12px rgba(125,216,255,0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 36px 36px 32px;
+    margin: 0 auto;
+  }
+  .page-card h1 { font-size: 25px; margin: 0 0 6px; line-height: 1.25; word-break: break-word; }
+  .page-card h1 .quant { color: var(--accent); }
+  .page-card .source { margin: 0 0 28px; font-size: 13px; color: var(--text-faint); word-break: break-all; }
+  .page-card .source a { color: var(--text-dim); text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .page-card .source a:hover { color: var(--accent); }
+  .page-card h2 {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-dim); margin: 28px 0 10px;
+  }
+  .cmd-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .cmd {
+    flex: 1 1 220px; min-width: 0;
+    background: rgba(5, 8, 14, 0.7);
+    border: 1px solid rgba(125, 216, 255, 0.25);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12.5px; line-height: 1.5; color: #d7ecff;
+    overflow-x: auto; white-space: pre;
+  }
+  .copy-btn {
+    flex: none;
+    appearance: none; cursor: pointer;
+    background: rgba(125, 216, 255, 0.12);
+    border: 1px solid rgba(125, 216, 255, 0.4);
+    border-radius: 10px;
+    color: var(--accent);
+    font: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 0 16px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .copy-btn:hover { background: rgba(125, 216, 255, 0.2); border-color: rgba(125, 216, 255, 0.7); }
+  .copy-btn:active { transform: translateY(1px); }
+  .copy-btn.done { color: #b8ffcf; border-color: rgba(184, 255, 207, 0.5); background: rgba(184, 255, 207, 0.1); }
+  .copy-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .page-card .specs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin: 0; }
+  .page-card .specs div { font-size: 13px; }
+  .page-card .specs dt {
+    font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--text-faint); margin-bottom: 2px;
+  }
+  .page-card .specs dd { margin: 0; color: var(--text); font-weight: 500; }
+  .callout {
+    margin-top: 28px;
+    background: var(--warn-dim);
+    border: 1px solid rgba(255, 180, 84, 0.4);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 13px; line-height: 1.55; color: #ffe3bd;
+  }
+  .callout strong { color: var(--warn); }
+  .page-card footer {
+    margin-top: 26px; padding-top: 20px;
+    border-top: 1px solid rgba(238, 241, 248, 0.08);
+    font-size: 11.5px; color: var(--text-faint); line-height: 1.6;
+  }
+
   @media (max-width: 640px) {
     .stat-row { grid-template-columns: repeat(2, 1fr); }
     .tool-head { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 480px) {
+    .page-card { padding: 26px 22px 24px; }
+    .page-card .specs { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -136,6 +233,13 @@
     <span class="dot"></span>
     <span class="kicker">Svesse's Local AI</span>
   </header>
+
+  <div class="pagenav" role="tablist" aria-label="Pages">
+    <button type="button" role="tab" id="tab-inventory" aria-controls="page-inventory" aria-selected="true">Inventory</button>
+    <button type="button" role="tab" id="tab-heretic" aria-controls="page-heretic" aria-selected="false">Heretic Model</button>
+  </div>
+
+  <section id="page-inventory" role="tabpanel" aria-labelledby="tab-inventory">
   <h1>Local AI Inventory</h1>
   <p class="lede">
     A running snapshot of models across every local AI tool, since everything is being consolidated under
@@ -256,7 +360,83 @@
     Update it by hand (or ask for it to be regenerated) once <code style="font-family: var(--mono);">ollama list</code> and the
     <code style="font-family: var(--mono);">E:\</code> drive scan actually come back with results.
   </footer>
+  </section>
+
+  <section id="page-heretic" role="tabpanel" aria-labelledby="tab-heretic" hidden>
+    <div class="page-card">
+      <div class="kicker" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <span class="dot" style="width:6px;height:6px;"></span>Local Model &middot; Ollama / Hugging Face
+      </div>
+      <h1>Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP <span class="quant">Q8_0</span></h1>
+      <p class="source">
+        <a href="https://huggingface.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF" target="_blank" rel="noopener">hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF</a>
+      </p>
+
+      <h2>Run it</h2>
+      <div class="cmd-row">
+        <div class="cmd" id="cmd">ollama run hf.co/nerkyor/Qwen3.6-27B-Uncensored-Heretic-DSV4Pro-GLM52-SFT-GPT55-RL-Coding-VL-MTP-GGUF:Q8_0</div>
+        <button class="copy-btn" id="copyBtn" type="button">Copy</button>
+      </div>
+
+      <h2>Before you pull it</h2>
+      <dl class="specs">
+        <div><dt>Quantization</dt><dd>Q8_0 (near-lossless)</dd></div>
+        <div><dt>Parameters</dt><dd>27B</dd></div>
+        <div><dt>Approx. download</dt><dd>~29 GB</dd></div>
+        <div><dt>Recommended RAM</dt><dd>32 GB+ (or matching VRAM)</dd></div>
+        <div><dt>Prerequisite</dt><dd>Ollama installed &amp; running</dd></div>
+        <div><dt>First run</dt><dd>Downloads GGUF from Hugging Face</dd></div>
+      </dl>
+
+      <div class="callout">
+        <strong>Uncensored / "Heretic" branding</strong> means safety training has been deliberately stripped or bypassed — expect no refusal behavior. Separately, the name bundles several unrelated proprietary and open lineages (DeepSeek V4 Pro, GLM 5.2, GPT-5.5) into one 27B model, which isn't technically coherent — treat that part of the name as community marketing, not a verified merge lineage, regardless of how the underlying weights actually perform.
+      </div>
+
+      <footer>
+        Lighter on hardware? Check the same repo for a smaller quant (e.g. <code style="font-family:var(--mono)">Q4_K_M</code>) if Q8_0 is too large for your machine.
+      </footer>
+    </div>
+  </section>
 </main>
+
+<script>
+  const tabInventory = document.getElementById('tab-inventory');
+  const tabHeretic = document.getElementById('tab-heretic');
+  const pageInventory = document.getElementById('page-inventory');
+  const pageHeretic = document.getElementById('page-heretic');
+
+  function showPage(name) {
+    const onHeretic = name === 'heretic';
+    pageInventory.hidden = onHeretic;
+    pageHeretic.hidden = !onHeretic;
+    tabInventory.setAttribute('aria-selected', String(!onHeretic));
+    tabHeretic.setAttribute('aria-selected', String(onHeretic));
+    try { localStorage.setItem('inventory-page', name); } catch (e) {}
+    // the starfield canvas is sized to page scrollHeight, which changes a
+    // lot between the two tabs — re-measure once the new layout settles
+    requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+  }
+
+  tabInventory.addEventListener('click', () => showPage('inventory'));
+  tabHeretic.addEventListener('click', () => showPage('heretic'));
+
+  try {
+    if (localStorage.getItem('inventory-page') === 'heretic') showPage('heretic');
+  } catch (e) {}
+
+  const copyBtn = document.getElementById('copyBtn');
+  const cmdEl = document.getElementById('cmd');
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(cmdEl.textContent.trim());
+      copyBtn.textContent = 'Copied';
+      copyBtn.classList.add('done');
+      setTimeout(() => { copyBtn.textContent = 'Copy'; copyBtn.classList.remove('done'); }, 1600);
+    } catch (e) {
+      copyBtn.textContent = 'Select & copy manually';
+    }
+  });
+</script>
 
 <script>
   /* minimal dependency-free starfield, shared visual language with the rest of the site */
