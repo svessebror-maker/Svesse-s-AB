@@ -327,8 +327,11 @@
         // Rest the object on the ground without moving its origin.
         this._ground.position.y = box.min.y;
         const sphere = box.getBoundingSphere(new THREE.Sphere());
+        // 1.15 instead of a wider default padding — a hero object on a
+        // landing page should read as large and confident on first load,
+        // not small with a lot of empty space framing it.
         const dist =
-          (sphere.radius / Math.tan((this._camera.fov * Math.PI) / 360)) * 1.35;
+          (sphere.radius / Math.tan((this._camera.fov * Math.PI) / 360)) * 1.15;
         const dir = new THREE.Vector3(1, 0.55, 1.25).normalize();
         this._camera.position
           .copy(sphere.center)
