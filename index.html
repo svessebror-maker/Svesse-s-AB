@@ -291,7 +291,13 @@ function rgba(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-function makeLabelTexture(modelName, hover, subtitle, accent) {
+/* fixed warning amber, independent of each face's own accent — matches the
+   "Uncensored / No Filter / NSFW" tag styling used on the Heretic model
+   page and its inventory tab, so the same content-nature warning reads the
+   same color everywhere on the site. */
+const WARN_COLOR = '#ffb454';
+
+function makeLabelTexture(modelName, hover, subtitle, accent, tags, info) {
   const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
@@ -305,9 +311,13 @@ function makeLabelTexture(modelName, hover, subtitle, accent) {
   const kickerFont = 24, titleFont = 84, captionFont = 25;
   const kickerGap = 14, ruleGap = 22, ruleH = 3, captionGap = 22;
   const subtitleFont = 22, subtitleGap = 10;
+  const tagsFont = 15, tagChipH = tagsFont + 14, tagsGapAbove = 16, tagsGapBelow = 18;
+  const infoFont = 15, infoGapAbove = 10, infoGapBelow = 4;
 
   const contentH = kickerFont + kickerGap + titleFont
     + (subtitle ? subtitleFont + subtitleGap : 0)
+    + (tags && tags.length ? tagsGapAbove + tagChipH + tagsGapBelow : 0)
+    + (info ? infoGapAbove + infoFont + infoGapBelow : 0)
     + ruleGap + ruleH + captionGap + captionFont;
   const padX = 56, padY = 40;
   const plateW = Math.min(size - padX, 460);
@@ -395,6 +405,47 @@ function makeLabelTexture(modelName, hover, subtitle, accent) {
     ctx.fillText(subtitle.toUpperCase(), size / 2, cursorY);
     cursorY += subtitleFont;
   }
+
+  /* content-nature tag chips (Uncensored / No Filter / NSFW, etc.) — same
+     warning amber and pill shape as the tags on the Heretic model page, so
+     the warning reads consistently whether you're looking at the die or
+     the write-up */
+  if (tags && tags.length) {
+    cursorY += tagsGapAbove;
+    ctx.font = '700 ' + tagsFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+    try { ctx.letterSpacing = '1.5px'; } catch (e) {}
+    const chipPadX = 14, chipGap = 8;
+    const widths = tags.map((t) => ctx.measureText(t).width);
+    const totalW = widths.reduce((a, w) => a + w + chipPadX * 2, 0) + chipGap * (tags.length - 1);
+    let chipX = size / 2 - totalW / 2;
+    for (let i = 0; i < tags.length; i++) {
+      const w = widths[i] + chipPadX * 2;
+      roundRect(chipX, cursorY, w, tagChipH, tagChipH / 2);
+      ctx.fillStyle = 'rgba(255, 180, 84, 0.16)';
+      ctx.fill();
+      roundRect(chipX, cursorY, w, tagChipH, tagChipH / 2);
+      ctx.strokeStyle = 'rgba(255, 180, 84, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = WARN_COLOR;
+      ctx.fillText(tags[i], chipX + w / 2, cursorY + (tagChipH - tagsFont) / 2 - 1);
+      chipX += w + chipGap;
+    }
+    cursorY += tagChipH + tagsGapBelow;
+  }
+
+  /* one extra line of practical detail — download size, RAM, whatever
+     matters most for the specific model, kept short enough to read at
+     die scale */
+  if (info) {
+    cursorY += infoGapAbove;
+    ctx.font = '600 ' + infoFont + 'px -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif';
+    try { ctx.letterSpacing = '0.5px'; } catch (e) {}
+    ctx.fillStyle = 'rgba(238, 241, 248, 0.55)';
+    ctx.fillText(info, size / 2, cursorY);
+    cursorY += infoFont + infoGapBelow;
+  }
+
   cursorY += ruleGap;
 
   /* thin accent rule */
@@ -440,17 +491,22 @@ const FACES = [
   { normal: [1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Mistral', accent: '#b478ff' },
   { normal: [-1, 0, 0], up: new THREE.Vector3(0, 1, 0), model: 'Phi', accent: '#ff8fd0' },
   { normal: [0, 1, 0], up: new THREE.Vector3(0, 0, -1), model: 'Gemma', accent: '#7cffb2' },
-  { normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Heretic', subtitle: 'Qwen 27B · Q8_0', accent: '#ff6c6c' },
+  {
+    normal: [0, -1, 0], up: new THREE.Vector3(0, 0, 1), model: 'Heretic',
+    subtitle: 'Qwen 27B · Q8_0', accent: '#ff6c6c',
+    tags: ['UNCENSORED', 'NO FILTER', 'NSFW'],
+    info: '~29GB · 32GB+ RAM · NO REFUSALS',
+  },
 ];
 
 const LABEL_SIZE = S * 0.62;      // clears the 12mm edge fillet with margin to spare
 const LABEL_OFFSET = H + 0.0008;  // tiny standoff so the plane never z-fights the resin
 const labelMeshes = [];
 
-for (const { normal, up, model, subtitle, accent } of FACES) {
+for (const { normal, up, model, subtitle, accent, tags, info } of FACES) {
   const mat = new THREE.MeshBasicMaterial({
     name: 'label-' + model.toLowerCase(),
-    map: makeLabelTexture(model, false, subtitle, accent),
+    map: makeLabelTexture(model, false, subtitle, accent, tags, info),
     transparent: true,
     depthWrite: false,
   });
@@ -459,7 +515,7 @@ for (const { normal, up, model, subtitle, accent } of FACES) {
   plane.position.set(...normal).multiplyScalar(LABEL_OFFSET);
   plane.quaternion.copy(faceQuaternion(normal, up));
   plane.userData.normalTex = mat.map;
-  plane.userData.hoverTex = makeLabelTexture(model, true, subtitle, accent);
+  plane.userData.hoverTex = makeLabelTexture(model, true, subtitle, accent, tags, info);
   plane.userData.scaleTarget = 1;
   die.add(plane);
   labelMeshes.push(plane);
